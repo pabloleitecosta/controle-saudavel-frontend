@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "836245098733",
+    "project_id": "controle-saudavel-d69b5",
+    "storage_bucket": "controle-saudavel-d69b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836245098733:android:1d8f870ef9192514d63ce4",
+        "android_client_info": {
+          "package_name": "com.example.controle_saudavel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "836245098733-nqmtbohim2olm666lvnbpkmuj3ak0k63.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLNEJXCA-kyRzstCiwqJwG1xeXmpnbRsA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "836245098733-nqmtbohim2olm666lvnbpkmuj3ak0k63.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "836245098733-o2ocoat29vbtocounk5a395tbkke15lv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.controleSaudavel"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
