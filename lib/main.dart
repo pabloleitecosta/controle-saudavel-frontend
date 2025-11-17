@@ -1,4 +1,5 @@
 import 'package:controle_saudavel/src/ui/screens/add_meal_manual_screen.dart';
+import 'package:controle_saudavel/src/ui/screens/profile_goals_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -74,6 +75,7 @@ class ControleSaudavelApp extends StatelessWidget {
               SettingsScreen.route: (_) => const SettingsScreen(),
               CommunityScreen.route: (_) => const CommunityScreen(),
               CreatePostScreen.route: (_) => const CreatePostScreen(),
+              ProfileGoalsScreen.route: (_) => const ProfileGoalsScreen(),
             },
           );
         },

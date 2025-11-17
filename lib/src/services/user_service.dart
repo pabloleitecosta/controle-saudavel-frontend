@@ -44,7 +44,7 @@ class UserService {
     if (!doc.exists) {
       await createUserProfile(
         userId: firebaseUser.uid,
-        name: firebaseUser.displayName ?? 'Usuário',
+        name: firebaseUser.displayName ?? 'Usuario',
         email: firebaseUser.email ?? '',
       );
     }
@@ -153,11 +153,11 @@ class UserService {
     }
 
     if (avgProtein < 60) {
-      insights.add('Inclua fontes de proteína em mais refeições.');
+      insights.add('Inclua fontes de proteina em mais refeicoes.');
     }
 
     if (docs.length < 10) {
-      insights.add('Registre mais refeições para obter insights precisos.');
+      insights.add('Registre mais refeicoes para obter insights precisos.');
     }
 
     return UserInsights(
@@ -176,5 +176,62 @@ class UserService {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
+  }
+
+  Future<void> updateUserGoals({
+    required String userId,
+    int? age,
+    double? height,
+    double? weight,
+    required String sex,
+    required String goal,
+    required double activityLevel,
+  }) async {
+    await _ensureUserDoc(userId);
+
+    double? calculatedTmb;
+    double? calculatedTdee;
+    double? dailyGoal;
+
+    if (age != null && height != null && weight != null) {
+      if (sex == 'feminino') {
+        calculatedTmb =
+            655 + (9.563 * weight) + (1.850 * height) - (4.676 * age);
+      } else {
+        calculatedTmb =
+            66 + (13.75 * weight) + (5.003 * height) - (6.75 * age);
+      }
+
+      calculatedTdee = calculatedTmb * activityLevel;
+
+      switch (goal) {
+        case 'perder':
+          dailyGoal = calculatedTdee - 350;
+          break;
+        case 'ganhar':
+          dailyGoal = calculatedTdee + 350;
+          break;
+        default:
+          dailyGoal = calculatedTdee;
+          break;
+      }
+
+      if (dailyGoal != null && dailyGoal < 1200) {
+        dailyGoal = 1200;
+      }
+    }
+
+    await _usersCollection.doc(userId).set({
+      'age': age,
+      'height': height,
+      'weight': weight,
+      'sex': sex,
+      'goal': goal,
+      'activityLevel': activityLevel,
+      'tmb': calculatedTmb,
+      'tdee': calculatedTdee,
+      'dailyCaloriesGoal': dailyGoal,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 }

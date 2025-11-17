@@ -4,6 +4,7 @@ import '../../core/i18n.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/gamification_service.dart';
 import '../../models/gamification_summary.dart';
+import 'profile_goals_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const route = '/profile';
@@ -113,7 +114,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       .toList(),
                 ),
             ],
-
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.favorite, color: Color(0xFFA8D0E6)),
+                title: const Text('Minhas Metas'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pushNamed(context, ProfileGoalsScreen.route);
+                },
+              ),
+            ),
             const Spacer(),
             ElevatedButton(
               onPressed: () => auth.signOut(),
