@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/i18n.dart';
+
 import '../../providers/auth_provider.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   static const route = '/auth/login';
@@ -12,50 +13,98 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+  final emailCtrl = TextEditingController();
+  final passCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    emailCtrl.dispose();
+    passCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    final auth = context.watch<AuthProvider>();
+    final auth = Provider.of<AuthProvider>(context);
+    final platform = Theme.of(context).platform;
+    final supportsApple =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(t.t('login_title')),
-      ),
+      appBar: AppBar(title: const Text("Entrar")),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
-              controller: _emailCtrl,
-              decoration: InputDecoration(labelText: t.t('email')),
+              controller: emailCtrl,
+              decoration: const InputDecoration(labelText: "E-mail"),
             ),
-            const SizedBox(height: 12),
             TextField(
-              controller: _passwordCtrl,
-              decoration: InputDecoration(labelText: t.t('password')),
+              controller: passCtrl,
+              decoration: const InputDecoration(labelText: "Senha"),
               obscureText: true,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: auth.loading
                   ? null
                   : () async {
-                      await auth.signIn(
-                          _emailCtrl.text.trim(), _passwordCtrl.text.trim());
+                      final ok = await auth.loginWithEmail(
+                        emailCtrl.text.trim(),
+                        passCtrl.text.trim(),
+                      );
+                      if (ok && mounted) {
+                        Navigator.pushReplacementNamed(context, '/home');
+                      }
                     },
               child: auth.loading
-                  ? const CircularProgressIndicator()
-                  : Text(t.t('login')),
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text("Entrar"),
             ),
+
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 20),
+            // ---- GOOGLE ----
+            ElevatedButton.icon(
+              onPressed: auth.loading
+                  ? null
+                  : () async {
+                      final ok = await auth.loginWithGoogle();
+                      if (ok && mounted) {
+                        Navigator.pushReplacementNamed(context, '/home');
+                      }
+                    },
+              icon: const Icon(Icons.login),
+              label: const Text("Entrar com Google"),
+            ),
+
+            const SizedBox(height: 12),
+            if (supportsApple)
+              ElevatedButton.icon(
+                onPressed: auth.loading
+                    ? null
+                    : () async {
+                        final ok = await auth.loginWithApple();
+                        if (ok && mounted) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        }
+                      },
+                icon: const Icon(Icons.apple),
+                label: const Text("Entrar com Apple"),
+              ),
+            const Spacer(),
             TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/auth/signup');
-              },
-              child: Text(t.t('signup')),
-            )
+              onPressed: () => Navigator.pushReplacementNamed(
+                  context, SignupScreen.route),
+              child: const Text("Criar conta"),
+            ),
           ],
         ),
       ),

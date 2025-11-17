@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -51,6 +48,15 @@ class DefaultFirebaseOptions {
         );
     }
   }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyC_o9aWCAmjIbHZlDgDWCrqFVuPdhhHtwc',
+    appId: '1:836245098733:web:24267689b174460fd63ce4',
+    messagingSenderId: '836245098733',
+    projectId: 'controle-saudavel-d69b5',
+    authDomain: 'controle-saudavel-d69b5.firebaseapp.com',
+    storageBucket: 'controle-saudavel-d69b5.firebasestorage.app',
+  );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyC_o9aWCAmjIbHZlDgDWCrqFVuPdhhHtwc',

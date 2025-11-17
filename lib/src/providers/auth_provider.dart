@@ -1,43 +1,65 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
 import '../models/user.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
+  StreamSubscription<AppUser?>? _authSubscription;
 
   AppUser? user;
   bool loading = false;
 
   AuthProvider(this._authService) {
-    _authService.onAuthStateChanged.listen((u) {
-      user = u;
+    user = _authService.currentUser;
+    _authSubscription = _authService.onAuthStateChanged.listen((authUser) {
+      user = authUser;
       notifyListeners();
     });
   }
 
-  Future<void> signIn(String email, String password) async {
-    loading = true;
-    notifyListeners();
-    try {
-      await _authService.signInWithEmail(email, password);
-    } finally {
-      loading = false;
-      notifyListeners();
-    }
+  Future<bool> loginWithEmail(String email, String password) async {
+    return _guardAsyncCall(() => _authService.loginWithEmail(email, password));
   }
 
-  Future<void> signUp(String name, String email, String password) async {
-    loading = true;
-    notifyListeners();
-    try {
-      await _authService.signUpWithEmail(name, email, password);
-    } finally {
-      loading = false;
-      notifyListeners();
-    }
+  Future<bool> loginWithGoogle() async {
+    return _guardAsyncCall(_authService.loginWithGoogle);
+  }
+
+  Future<bool> loginWithApple() async {
+    return _guardAsyncCall(_authService.loginWithApple);
+  }
+
+  Future<bool> signup(String name, String email, String password) async {
+    return _guardAsyncCall(
+        () => _authService.signUpWithEmail(name, email, password));
   }
 
   Future<void> signOut() async {
-    await _authService.signOut();
+    await _authService.logout();
+  }
+
+  Future<bool> _guardAsyncCall(Future<AppUser?> Function() action) async {
+    loading = true;
+    notifyListeners();
+    try {
+      final result = await action();
+      if (result != null) {
+        user = result;
+        return true;
+      }
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }
