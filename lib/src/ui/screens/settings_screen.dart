@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/i18n.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/settings_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -12,6 +13,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final settings = context.watch<SettingsProvider>();
+    final notifications = context.watch<NotificationProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -100,8 +102,17 @@ class SettingsScreen extends StatelessWidget {
                 SwitchListTile(
                   title: Text(t.t('notifications')),
                   subtitle: Text(t.t('notifications_desc')),
-                  value: settings.notificationsEnabled,
-                  onChanged: settings.toggleNotifications,
+                  value: notifications.hydrationEnabled,
+                  onChanged: (value) =>
+                      notifications.toggleHydration(value),
+                ),
+                const Divider(height: 0),
+                SwitchListTile(
+                  title: const Text('Lembretes de refeições'),
+                  subtitle: const Text('Cafe, almoço e jantar'),
+                  value: notifications.mealReminderEnabled,
+                  onChanged: (value) =>
+                      notifications.toggleMealReminder(value),
                 ),
                 const Divider(height: 0),
                 SwitchListTile(

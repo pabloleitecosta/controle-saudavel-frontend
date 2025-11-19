@@ -1,6 +1,11 @@
+import 'dart:math' as math;
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/weight_entry.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/user_service.dart';
 
@@ -16,6 +21,7 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
   final ageCtrl = TextEditingController();
   final weightCtrl = TextEditingController();
   final heightCtrl = TextEditingController();
+  final TextEditingController _logWeightCtrl = TextEditingController();
   final UserService _userService = UserService();
 
   String sex = 'masculino';
@@ -27,11 +33,25 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
   bool loading = false;
   bool _fetchingProfile = false;
   Map<String, dynamic>? _profile;
+  bool _loadingWeights = false;
+  bool _savingWeight = false;
+  DateTime _weightDate = DateTime.now();
+  List<WeightEntry> _weightEntries = [];
 
   @override
   void initState() {
     super.initState();
     _loadExistingData();
+    _loadWeightHistory();
+  }
+
+  @override
+  void dispose() {
+    ageCtrl.dispose();
+    weightCtrl.dispose();
+    heightCtrl.dispose();
+    _logWeightCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadExistingData() async {
@@ -66,6 +86,24 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _fetchingProfile = false);
+      }
+    }
+  }
+
+  Future<void> _loadWeightHistory() async {
+    final userId = context.read<AuthProvider>().user?.id;
+    if (userId == null) return;
+    setState(() => _loadingWeights = true);
+    try {
+      final history = await _userService.fetchWeightHistory(userId, limit: 30);
+      if (!mounted) return;
+      setState(() {
+        _weightEntries = history;
+        _loadingWeights = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loadingWeights = false);
       }
     }
   }
@@ -106,6 +144,57 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
     }
   }
 
+  Future<void> _saveWeightEntry() async {
+    final userId = context.read<AuthProvider>().user?.id;
+    if (userId == null) return;
+
+    final weightValue = double.tryParse(_logWeightCtrl.text.replaceAll(',', '.'));
+    if (weightValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe um peso valido.')),
+      );
+      return;
+    }
+
+    setState(() => _savingWeight = true);
+    try {
+      await _userService.addWeightEntry(
+        userId: userId,
+        weight: weightValue,
+        date: _weightDate,
+      );
+      _logWeightCtrl.clear();
+      await _loadWeightHistory();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Peso registrado com sucesso!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao registrar peso: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _savingWeight = false);
+      }
+    }
+  }
+
+  Future<void> _pickWeightDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _weightDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() => _weightDate = picked);
+    }
+  }
+
   Widget _buildCard({required String title, required Widget child}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -115,7 +204,7 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -304,7 +393,7 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
                         ),
                         const SizedBox(height: 20),
                         DropdownButtonFormField<double>(
-                          value: activityLevel,
+                          initialValue: activityLevel,
                           decoration: const InputDecoration(
                             labelText: 'Nivel de atividade',
                             border: OutlineInputBorder(),
@@ -377,6 +466,7 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
                         ],
                       ),
                     ),
+                  _buildWeightCard(),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
@@ -413,5 +503,155 @@ class _ProfileGoalsScreenState extends State<ProfileGoalsScreen> {
               ),
             ),
     );
+  }
+
+  Widget _buildWeightCard() {
+    final formatter = DateFormat('dd/MM');
+    return _buildCard(
+      title: 'Registro de peso',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _logWeightCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Peso atual (kg)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: _pickWeightDate,
+                child: Text(formatter.format(_weightDate)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _savingWeight ? null : _saveWeightEntry,
+              icon: _savingWeight
+                  ? const SizedBox(
+                      height: 14,
+                      width: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.monitor_weight_outlined),
+              label: const Text('Registrar peso'),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 200,
+            child: _loadingWeights
+                ? const Center(child: CircularProgressIndicator())
+                : _weightEntries.isEmpty
+                    ? const Center(child: Text('Nenhum peso registrado ainda.'))
+                    : LineChart(_buildWeightChartData()),
+          ),
+          const SizedBox(height: 12),
+          if (_weightEntries.isNotEmpty)
+            Column(
+              children: _weightEntries.take(4).map((entry) {
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.fitness_center, size: 20),
+                  title: Text('${entry.weight.toStringAsFixed(1)} kg'),
+                  subtitle: Text(formatter.format(entry.date)),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  LineChartData _buildWeightChartData() {
+    final sorted = List<WeightEntry>.from(_weightEntries)
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final lastEntries = sorted.takeLast(14).toList();
+    final points = lastEntries
+        .asMap()
+        .entries
+        .map((entry) => FlSpot(
+              entry.key.toDouble(),
+              entry.value.weight,
+            ))
+        .toList();
+    final minY =
+        points.fold<double>(points.first.y, (value, spot) => math.min(value, spot.y)) - 2;
+    final maxY =
+        points.fold<double>(points.first.y, (value, spot) => math.max(value, spot.y)) + 2;
+
+    return LineChartData(
+      minX: 0,
+      maxX: (points.length - 1).toDouble(),
+      minY: minY,
+      maxY: maxY,
+      gridData: FlGridData(show: false),
+      borderData: FlBorderData(
+        show: true,
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      titlesData: FlTitlesData(
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 40,
+            getTitlesWidget: (value, meta) => Text(
+              value.toStringAsFixed(0),
+              style: const TextStyle(fontSize: 11),
+            ),
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              if (index < 0 || index >= points.length) return const SizedBox.shrink();
+              final entry = lastEntries[index];
+              return Text(
+                DateFormat('dd/MM').format(entry.date),
+                style: const TextStyle(fontSize: 10),
+              );
+            },
+          ),
+        ),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      lineBarsData: [
+        LineChartBarData(
+          isCurved: true,
+          color: const Color(0xFFA8D0E6),
+          barWidth: 3,
+          dotData: FlDotData(show: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: const Color(0xFFA8D0E6).withValues(alpha: 0.2),
+          ),
+          spots: points,
+        ),
+      ],
+    );
+  }
+}
+
+extension<T> on List<T> {
+  Iterable<T> takeLast(int count) {
+    if (length <= count) return this;
+    return sublist(length - count);
   }
 }

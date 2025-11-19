@@ -3,9 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../core/api_client.dart';
+import '../models/daily_macro_summary.dart';
 import '../models/meal_log.dart';
 import '../models/nutrition_estimate.dart';
 import '../models/user_insights.dart';
+import '../models/weight_entry.dart';
 
 class UserService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -17,6 +19,10 @@ class UserService {
 
   CollectionReference<Map<String, dynamic>> _mealsCollection(String userId) =>
       _usersCollection.doc(userId).collection('meals');
+
+  CollectionReference<Map<String, dynamic>> _weightsCollection(
+          String userId) =>
+      _usersCollection.doc(userId).collection('weights');
 
   // Criar perfil completo pela primeira vez
   Future<void> createUserProfile({
@@ -292,6 +298,115 @@ class UserService {
       ],
       "source": "food_search",
     });
+  }
+
+  Future<void> addWeightEntry({
+    required String userId,
+    required double weight,
+    DateTime? date,
+  }) async {
+    await _ensureUserDoc(userId);
+    final entryDate = date ?? DateTime.now();
+    await _weightsCollection(userId).add({
+      'weight': weight,
+      'date': _dateFormatter.format(entryDate),
+      'recordedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<WeightEntry>> fetchWeightHistory(
+    String userId, {
+    int limit = 30,
+  }) async {
+    await _ensureUserDoc(userId);
+    Query<Map<String, dynamic>> query =
+        _weightsCollection(userId).orderBy('recordedAt', descending: true);
+    if (limit > 0) {
+      query = query.limit(limit);
+    }
+    final snapshot = await query.get();
+    return snapshot.docs.map(WeightEntry.fromSnapshot).toList();
+  }
+
+  Future<List<DailyMacroSummary>> fetchWeeklyMacros(String userId) async {
+    await _ensureUserDoc(userId);
+    final now = DateTime.now();
+    final fromDate = now.subtract(const Duration(days: 6));
+
+    final snapshot = await _mealsCollection(userId)
+        .orderBy('createdAt', descending: true)
+        .limit(80)
+        .get();
+
+    final Map<String, DailyMacroSummary> aggregates = {};
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final dateStr = data['date']?.toString();
+      if (dateStr == null) continue;
+      DateTime? parsed;
+      try {
+        parsed = DateTime.parse(dateStr);
+      } catch (_) {
+        parsed = null;
+      }
+      parsed ??= (data['createdAt'] as Timestamp?)?.toDate();
+      if (parsed == null) continue;
+
+      final dateOnly = DateTime(parsed.year, parsed.month, parsed.day);
+      if (dateOnly.isBefore(DateTime(fromDate.year, fromDate.month, fromDate.day))) {
+        continue;
+      }
+      final key = _dateFormatter.format(dateOnly);
+      final calories = (data['totalCalories'] ?? 0).toDouble();
+      final protein = (data['totalProtein'] ?? 0).toDouble();
+      final carbs = (data['totalCarbs'] ?? 0).toDouble();
+      final fat = (data['totalFat'] ?? 0).toDouble();
+
+      final existing = aggregates[key];
+      if (existing == null) {
+        aggregates[key] = DailyMacroSummary(
+          date: dateOnly,
+          calories: calories,
+          protein: protein,
+          carbs: carbs,
+          fat: fat,
+        );
+      } else {
+        aggregates[key] = DailyMacroSummary(
+          date: dateOnly,
+          calories: existing.calories + calories,
+          protein: existing.protein + protein,
+          carbs: existing.carbs + carbs,
+          fat: existing.fat + fat,
+        );
+      }
+    }
+
+    final list = aggregates.values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // garante 7 dias (preenche com zeros caso n�o existam registros)
+    final Map<String, DailyMacroSummary> normalized = {
+      for (final entry in list) _dateFormatter.format(entry.date): entry,
+    };
+    final result = <DailyMacroSummary>[];
+    for (int i = 0; i < 7; i++) {
+      final day = fromDate.add(Duration(days: i));
+      final key = _dateFormatter.format(day);
+      result.add(
+        normalized[key] ??
+            DailyMacroSummary(
+              date: DateTime(day.year, day.month, day.day),
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+            ),
+      );
+    }
+
+    return result;
   }
 }
 

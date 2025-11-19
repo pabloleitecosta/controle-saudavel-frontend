@@ -11,6 +11,7 @@ import 'firebase_options.dart';
 import 'src/core/i18n.dart';
 import 'src/core/theme.dart';
 import 'src/providers/auth_provider.dart';
+import 'src/providers/notification_provider.dart';
 import 'src/providers/settings_provider.dart';
 import 'src/services/auth_service.dart';
 import 'src/ui/screens/add_meal_screen.dart';
@@ -45,6 +46,9 @@ class ControleSaudavelApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider()..initialize(),
         ),
       ],
       child: Consumer<SettingsProvider>(
