@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -12,6 +13,7 @@ class AuthService {
   bool _persistenceReady = false;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _googleInitialized = false;
+  final FacebookAuth _facebookAuth = FacebookAuth.instance;
 
   Stream<AppUser?> get onAuthStateChanged =>
       _auth.authStateChanges().map(_mapUser);
@@ -137,5 +139,34 @@ class AuthService {
 
   Future<void> logout() async {
     await _auth.signOut();
+  }
+
+  Future<AppUser?> loginWithFacebook() async {
+    await _ensurePersistence();
+    final LoginResult result = await _facebookAuth.login();
+
+    switch (result.status) {
+      case LoginStatus.success:
+        final accessToken = result.accessToken;
+        if (accessToken == null) {
+          throw FirebaseAuthException(
+            code: 'facebook-token-null',
+            message: 'Token do Facebook nao retornado.',
+          );
+        }
+        final credential = FacebookAuthProvider.credential(accessToken.token);
+        final authResult = await _auth.signInWithCredential(credential);
+        return _mapUser(authResult.user);
+      case LoginStatus.operationInProgress:
+        return null;
+      case LoginStatus.cancelled:
+        return null;
+      case LoginStatus.failed:
+      default:
+        throw FirebaseAuthException(
+          code: 'facebook-login-failed',
+          message: result.message,
+        );
+    }
   }
 }

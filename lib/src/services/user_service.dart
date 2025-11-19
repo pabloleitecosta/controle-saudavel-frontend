@@ -2,12 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../core/api_client.dart';
 import '../models/meal_log.dart';
+import '../models/nutrition_estimate.dart';
 import '../models/user_insights.dart';
 
 class UserService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final DateFormat _dateFormatter = DateFormat('yyyy-MM-dd');
+  final ApiClient _api = ApiClient();
 
   CollectionReference<Map<String, dynamic>> get _usersCollection =>
       _db.collection('users');
@@ -234,4 +237,61 @@ class UserService {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+  Future<void> saveMealFromEstimate({
+    required String userId,
+    required DateTime date,
+    required String mealType,
+    required NutritionEstimate estimate,
+  }) async {
+    final items = estimate.items.map((item) {
+      return {
+        'label': item.label,
+        'quantity': item.multiplier,
+        'unit': item.servingUnit,
+        'calories': item.calories,
+        'protein': item.protein,
+        'carbs': item.carbs,
+        'fat': item.fat,
+      };
+    }).toList();
+
+    await saveMeal(
+      userId: userId,
+      date: date,
+      items: items,
+      totalCalories: estimate.totalCalories,
+      totalProtein: estimate.totalProtein,
+      totalCarbs: estimate.totalCarbs,
+      totalFat: estimate.totalFat,
+      source: 'photo-$mealType',
+    );
+  }
+
+  Future<void> saveMealFromFood({
+    required String userId,
+    required DateTime date,
+    required String mealType,
+    required Map<String, dynamic> food,
+  }) async {
+    final dateStr = _dateFormatter.format(date);
+
+    await _api.post("/user/$userId/meals", {
+      "date": dateStr,
+      "mealType": mealType,
+      "items": [
+        {
+          "foodId": food['id'] ?? food['mappedFoodId'],
+          "name": food['name'] ?? food['label'],
+          "serving": food['serving_size'] ?? 1,
+          "servingUnit": food['serving_unit'] ?? 'porcao',
+          "calories": food['calories'],
+          "protein": food['protein'],
+          "carbs": food['carbs'],
+          "fat": food['fat'],
+        }
+      ],
+      "source": "food_search",
+    });
+  }
 }
+

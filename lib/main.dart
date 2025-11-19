@@ -1,5 +1,7 @@
 import 'package:controle_saudavel/src/ui/screens/add_meal_manual_screen.dart';
 import 'package:controle_saudavel/src/ui/screens/profile_goals_screen.dart';
+import 'package:controle_saudavel/src/ui/screens/recipe_create_screen.dart';
+import 'package:controle_saudavel/src/ui/screens/recipe_list_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,6 +23,7 @@ import 'src/ui/screens/settings_screen.dart';
 import 'src/ui/screens/signup_screen.dart';
 import 'src/ui/screens/stats_screen.dart';
 import 'src/ui/screens/create_post_screen.dart';
+import 'src/ui/screens/recipe_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +52,8 @@ class ControleSaudavelApp extends StatelessWidget {
           return MaterialApp(
             title: 'Controle Saudável',
             theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: settings.themeMode,
             locale: settings.locale,
             supportedLocales: const [
               Locale('pt', 'BR'),
@@ -76,6 +81,12 @@ class ControleSaudavelApp extends StatelessWidget {
               CommunityScreen.route: (_) => const CommunityScreen(),
               CreatePostScreen.route: (_) => const CreatePostScreen(),
               ProfileGoalsScreen.route: (_) => const ProfileGoalsScreen(),
+              RecipeListScreen.route: (_) => const RecipeListScreen(),
+              RecipeCreateScreen.route: (_) => const RecipeCreateScreen(),
+              RecipeDetailScreen.route: (context) {
+                    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+                    return RecipeDetailScreen(recipeId: args['id'] as String);
+              },
             },
           );
         },

@@ -20,5 +20,13 @@
   "today": "Today",
   "language": "Language",
   "language_pt": "Portuguese (Brazil)",
-  "language_en": "English (US)"
+  "language_en": "English (US)",
+  "theme_mode": "App theme",
+  "theme_system": "Follow system",
+  "theme_light": "Light",
+  "theme_dark": "Dark",
+  "notifications": "Notifications",
+  "notifications_desc": "Receive reminders for meals and hydration.",
+  "privacy_mode": "Privacy mode",
+  "privacy_mode_desc": "Hide sensitive data when sharing with the community."
 }

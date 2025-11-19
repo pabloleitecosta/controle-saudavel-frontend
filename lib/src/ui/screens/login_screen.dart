@@ -86,6 +86,20 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: auth.loading
+                  ? null
+                  : () async {
+                      final ok = await auth.loginWithFacebook();
+                      if (ok && mounted) {
+                        Navigator.pushReplacementNamed(context, '/home');
+                      }
+                    },
+              icon: const Icon(Icons.facebook),
+              label: const Text("Entrar com Facebook"),
+            ),
+
+            const SizedBox(height: 12),
             if (supportsApple)
               ElevatedButton.icon(
                 onPressed: auth.loading

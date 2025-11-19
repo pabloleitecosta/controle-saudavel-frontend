@@ -6,6 +6,7 @@ import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import 'profile_goals_screen.dart';
 import 'add_meal_screen.dart';
+import '../widgets/add_food_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   static const route = "/home";
@@ -248,47 +249,62 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _mealCard(String title, IconData icon, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 10,
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: softBlue, size: 30),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(title,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: darkText,
-                )),
-          ),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, AddMealScreen.route),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: softBlue,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.add, color: Colors.white),
+Widget _mealCard(String title, IconData icon, BuildContext context) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 10,
+          color: Colors.black.withOpacity(0.05),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: softBlue, size: 30),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: darkText,
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        GestureDetector(
+          onTap: () {
+            _openAddFoodModal(context, title);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: softBlue,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+void _openAddFoodModal(BuildContext context, String mealType) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      return AddFoodModal(mealType: mealType);
+    },
+  );
+}
 
   // ------------------------------------------------------------------
   // PREMIUM OPTIONS

@@ -32,6 +32,10 @@ class AuthProvider extends ChangeNotifier {
     return _guardAsyncCall(_authService.loginWithApple);
   }
 
+  Future<bool> loginWithFacebook() async {
+    return _guardAsyncCall(_authService.loginWithFacebook);
+  }
+
   Future<bool> signup(String name, String email, String password) async {
     return _guardAsyncCall(
         () => _authService.signUpWithEmail(name, email, password));
