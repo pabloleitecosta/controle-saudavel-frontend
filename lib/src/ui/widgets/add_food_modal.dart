@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/image_recognition_service.dart';
 import '../../services/user_service.dart';
 import '../screens/recipe_create_screen.dart';
+import '../screens/add_meal_manual_screen.dart';
 
 class AddFoodModal extends StatefulWidget {
   final String mealType;
@@ -227,6 +228,10 @@ class _AddFoodModalState extends State<AddFoodModal> {
                 builder: (_) => RecipeCreateScreen(),
               ),
             );
+          }),
+          _menuIcon(Icons.edit, 'Alimento\nmanual', () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, AddMealManualScreen.route);
           }),
           _menuIcon(Icons.qr_code_scanner, 'Codigo', () {}),
         ],
