@@ -73,9 +73,12 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
   }
 
   Future<void> _loadRecipes() async {
+    final user = context.read<AuthProvider>().user;
+    if (user == null) return;
+
     setState(() => _loadingRecipes = true);
     try {
-      final data = await _recipesService.exploreRecipes();
+      final data = await _recipesService.exploreRecipes(user.id);
       setState(() => _recipes = data);
     } catch (e) {
       if (!mounted) return;
@@ -538,9 +541,13 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
                 ],
               ),
             ),
-            ElevatedButton(
-              onPressed: _saveMeal,
-              child: const Text('Salvar refeição'),
+            SizedBox(
+              width: 180,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: _saveMeal,
+                child: const Text('Salvar refeição'),
+              ),
             ),
           ],
         ),

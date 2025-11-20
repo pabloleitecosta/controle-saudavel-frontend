@@ -131,13 +131,17 @@ class _AddCustomFoodSheetState extends State<AddCustomFoodSheet> {
                     else
                       const SizedBox(width: 8),
                     const Spacer(),
-                    ElevatedButton(
-                      onPressed: _nextStep,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
+                    SizedBox(
+                      width: 180,
+                      height: 44,
+                      child: ElevatedButton(
+                        onPressed: _nextStep,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(_step == 2 ? 'Salvar' : 'Próximo passo'),
                       ),
-                      child: Text(_step == 2 ? 'Salvar' : 'Próximo passo'),
                     ),
                   ],
                 ),

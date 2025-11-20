@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/recipes_service.dart';
 
 class RecipeCreateScreen extends StatefulWidget {
@@ -34,9 +36,17 @@ class _RecipeCreateScreenState extends State<RecipeCreateScreen> {
   }
 
   Future<void> _save() async {
+    final user = context.read<AuthProvider>().user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entre para criar receitas.')),
+      );
+      return;
+    }
+
     setState(() => saving = true);
 
-    await _recipesService.createRecipe({
+    await _recipesService.createRecipe(user.id, {
       "name": _nameCtrl.text,
       "description": _descCtrl.text,
       "ingredients": _ingredientsCtrl.text,

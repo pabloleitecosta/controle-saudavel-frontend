@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/food_item.dart';
 import '../../services/food_service.dart';
 import '../../services/recipes_service.dart';
 import 'recipe_create_screen.dart';
+import '../../providers/auth_provider.dart';
 
 class RecipeListScreen extends StatefulWidget {
   static const route = "/recipes";
@@ -48,10 +50,13 @@ class _RecipeListScreenState extends State<RecipeListScreen>
   }
 
   Future<void> _loadInitial() async {
+    final user = context.read<AuthProvider>().user;
+    if (user == null) return;
+
     setState(() => loadingRecipes = true);
     try {
-      final mine = await _recipesService.listMyRecipes();
-      final explore = await _recipesService.exploreRecipes();
+      final mine = await _recipesService.listMyRecipes(user.id);
+      final explore = await _recipesService.exploreRecipes(user.id);
       if (!mounted) return;
       setState(() {
         myRecipes = mine;

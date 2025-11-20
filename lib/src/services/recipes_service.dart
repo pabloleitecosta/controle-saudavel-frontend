@@ -4,18 +4,27 @@ import '../models/nutrition_estimate.dart';
 class RecipesService {
   final ApiClient _api = ApiClient();
 
-  Future<List<Map<String, dynamic>>> listMyRecipes() async {
-    final data = await _api.get('/api/recipes', query: {'type': 'mine'});
+  Future<List<Map<String, dynamic>>> listMyRecipes(String userId) async {
+    final data = await _api.get('/api/recipes', query: {
+      'type': 'mine',
+      'userId': userId,
+    });
     return _parseList(data);
   }
 
-  Future<List<Map<String, dynamic>>> exploreRecipes() async {
-    final data = await _api.get('/api/recipes', query: {'type': 'explore'});
+  Future<List<Map<String, dynamic>>> exploreRecipes(String userId) async {
+    final data = await _api.get('/api/recipes', query: {
+      'type': 'explore',
+      'userId': userId,
+    });
     return _parseList(data);
   }
 
-  Future<void> createRecipe(Map<String, dynamic> data) async {
-    await _api.post('/api/recipes', data);
+  Future<void> createRecipe(String userId, Map<String, dynamic> data) async {
+    await _api.post('/api/recipes', {
+      ...data,
+      'ownerId': userId,
+    });
   }
 
   Future<Map<String, dynamic>> getRecipe(String id) async {

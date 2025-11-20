@@ -231,7 +231,10 @@ class _AddFoodModalState extends State<AddFoodModal> {
           }),
           _menuIcon(Icons.edit, 'Alimento\nmanual', () {
             Navigator.pop(context);
-            Navigator.pushNamed(context, AddMealManualScreen.route);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context, rootNavigator: true)
+                  .pushNamed(AddMealManualScreen.route);
+            });
           }),
           _menuIcon(Icons.qr_code_scanner, 'Codigo', () {}),
         ],
