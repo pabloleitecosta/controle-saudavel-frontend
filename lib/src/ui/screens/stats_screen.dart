@@ -4,9 +4,11 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/i18n.dart';
 import '../../models/daily_macro_summary.dart';
+import '../../models/meal_log.dart';
 import '../../models/user_insights.dart';
 import '../../models/weight_entry.dart';
 import '../../providers/auth_provider.dart';
@@ -24,6 +26,7 @@ class _StatsScreenState extends State<StatsScreen> {
   final _userService = UserService();
   Future<_StatsBundle>? _future;
   String? _lastUserId;
+  bool _exporting = false;
 
   @override
   void didChangeDependencies() {
@@ -47,12 +50,68 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
+  Future<void> _exportCsv() async {
+    final userId = _lastUserId;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Entre para exportar o histórico.')),
+      );
+      return;
+    }
+
+    setState(() => _exporting = true);
+    try {
+      final meals = await _userService.fetchMeals(userId);
+      if (meals.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nenhuma refeição registrada ainda.')),
+        );
+      } else {
+        final csv = _mealsToCsv(meals);
+        await Share.share(csv, subject: 'Historico Controle Saudavel');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao exportar: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
+    }
+  }
+
+  String _mealsToCsv(List<MealLog> meals) {
+    final buffer = StringBuffer();
+    buffer.writeln(
+        'data,origem,calorias,proteina,carboidratos,gorduras,quantidade_itens');
+    for (final meal in meals) {
+      buffer.writeln(
+        '${meal.date},${meal.source},${meal.totalCalories.toStringAsFixed(0)},${meal.totalProtein.toStringAsFixed(1)},${meal.totalCarbs.toStringAsFixed(1)},${meal.totalFat.toStringAsFixed(1)},${meal.items.length}',
+      );
+    }
+    return buffer.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(t.t('stats_title')),
+        actions: [
+          IconButton(
+            onPressed: _exporting ? null : _exportCsv,
+            icon: _exporting
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.ios_share),
+            tooltip: 'Exportar CSV',
+          ),
+        ],
       ),
       body: _future == null
           ? const Center(

@@ -44,6 +44,64 @@ class CommunityPost {
       createdAt: json['createdAt'] ?? '',
     );
   }
+
+  CommunityPost copyWith({
+    String? id,
+    String? userName,
+    String? text,
+    String? imageUrl,
+    double? totalCalories,
+    double? totalProtein,
+    double? totalCarbs,
+    double? totalFat,
+    int? likesCount,
+    int? commentsCount,
+    String? createdAt,
+  }) {
+    return CommunityPost(
+      id: id ?? this.id,
+      userName: userName ?? this.userName,
+      text: text ?? this.text,
+      imageUrl: imageUrl ?? this.imageUrl,
+      totalCalories: totalCalories ?? this.totalCalories,
+      totalProtein: totalProtein ?? this.totalProtein,
+      totalCarbs: totalCarbs ?? this.totalCarbs,
+      totalFat: totalFat ?? this.totalFat,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}
+
+class CommunityComment {
+  final String id;
+  final String userName;
+  final String text;
+  final String createdAt;
+
+  CommunityComment({
+    required this.id,
+    required this.userName,
+    required this.text,
+    required this.createdAt,
+  });
+
+  factory CommunityComment.fromJson(Map<String, dynamic> json) {
+    return CommunityComment(
+      id: json['id']?.toString() ?? '',
+      userName: json['userName']?.toString() ?? 'Usuario',
+      text: json['text']?.toString() ?? '',
+      createdAt: json['createdAt']?.toString() ?? '',
+    );
+  }
+}
+
+class CommunityFeedResult {
+  final List<CommunityPost> posts;
+  final String? nextCursor;
+
+  CommunityFeedResult({required this.posts, this.nextCursor});
 }
 
 class CommunityService {
@@ -52,15 +110,25 @@ class CommunityService {
   CommunityService({String? baseUrl})
       : baseUrl = baseUrl ?? AppConstants.apiBaseUrl;
 
-  Future<List<CommunityPost>> loadFeed({int limit = 20}) async {
-    final uri = Uri.parse('$baseUrl/community/feed?limit=$limit');
+  Future<CommunityFeedResult> loadFeed({
+    int limit = 20,
+    String? startAfter,
+  }) async {
+    final query = <String, String>{
+      'limit': '$limit',
+      if (startAfter != null) 'startAfter': startAfter,
+    };
+    final uri = Uri.parse('$baseUrl/community/feed')
+        .replace(queryParameters: query);
     final resp = await http.get(uri);
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
       final postsJson = data['posts'] as List<dynamic>? ?? [];
-      return postsJson
+      final posts = postsJson
           .map((e) => CommunityPost.fromJson(e as Map<String, dynamic>))
           .toList();
+      final nextCursor = data['nextCursor'] as String?;
+      return CommunityFeedResult(posts: posts, nextCursor: nextCursor);
     } else {
       throw Exception('Erro ao carregar feed: ${resp.statusCode}');
     }
@@ -103,6 +171,46 @@ class CommunityService {
     );
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       throw Exception('Erro ao curtir post: ${resp.statusCode}');
+    }
+  }
+
+  Future<void> unlikePost(String postId, String userId) async {
+    final uri = Uri.parse('$baseUrl/community/$postId/like');
+    final request = http.Request('DELETE', uri)
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode({'userId': userId});
+    final response = await http.Client().send(request);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Erro ao remover like: ${response.statusCode}');
+    }
+  }
+
+  Future<List<CommunityComment>> fetchComments(String postId) async {
+    final uri = Uri.parse('$baseUrl/community/$postId/comments');
+    final resp = await http.get(uri);
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final items = (data['comments'] as List<dynamic>? ?? [])
+          .map((e) => CommunityComment.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return items;
+    }
+    throw Exception('Erro ao carregar comentarios: ${resp.statusCode}');
+  }
+
+  Future<void> addComment({
+    required String postId,
+    required String userId,
+    required String text,
+  }) async {
+    final uri = Uri.parse('$baseUrl/community/$postId/comments');
+    final resp = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId, 'text': text}),
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception('Erro ao comentar: ${resp.statusCode}');
     }
   }
 }

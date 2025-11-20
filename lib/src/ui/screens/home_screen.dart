@@ -318,6 +318,10 @@ void _openAddFoodModal(BuildContext context, String mealType) {
               "TMB, TDEE e metas nutricionais", Icons.favorite_border, () {
             Navigator.pushNamed(context, ProfileGoalsScreen.route);
           }),
+          _optionCard("Comunidade", "Feed e gamificação",
+              Icons.forum_outlined, () {
+            Navigator.pushNamed(context, '/community');
+          }),
           _optionCard("Contador de Agua", "Hidratacao diaria",
               Icons.water_drop_outlined, () {}),
           _optionCard("Exercicio e Sono", "Registre sua rotina",

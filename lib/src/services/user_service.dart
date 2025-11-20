@@ -408,5 +408,10 @@ class UserService {
 
     return result;
   }
-}
 
+  Future<bool> hasAnyMeal(String userId) async {
+    await _ensureUserDoc(userId);
+    final snapshot = await _mealsCollection(userId).limit(1).get();
+    return snapshot.docs.isNotEmpty;
+  }
+}
