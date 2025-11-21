@@ -24,6 +24,16 @@ class ApiClient {
     return _handleResponse(response);
   }
 
+  Future<dynamic> put(String path, dynamic body) async {
+    final uri = Uri.parse('$baseUrl$path');
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return _handleResponse(response);
+  }
+
   dynamic _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;

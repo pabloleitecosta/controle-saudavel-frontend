@@ -75,8 +75,14 @@ class ControleSaudavelApp extends StatelessWidget {
               SignupScreen.route: (_) => const SignupScreen(),
               HomeScreen.route: (_) => const HomeScreen(),
               AddMealScreen.route: (_) => const AddMealScreen(),
-              AddMealManualScreen.route: (_) =>
-                  const AddMealManualScreen(),
+              AddMealManualScreen.route: (context) {
+                final args = ModalRoute.of(context)!.settings.arguments
+                    as Map<String, dynamic>?;
+                final mealType = args != null && args['mealType'] is String
+                    ? args['mealType'] as String
+                    : 'Café da manhã';
+                return AddMealManualScreen(mealType: mealType);
+              },
               PhotoRecognitionScreen.route: (_) =>
                   const PhotoRecognitionScreen(),
               StatsScreen.route: (_) => const StatsScreen(),
@@ -88,8 +94,9 @@ class ControleSaudavelApp extends StatelessWidget {
               RecipeListScreen.route: (_) => const RecipeListScreen(),
               RecipeCreateScreen.route: (_) => const RecipeCreateScreen(),
               RecipeDetailScreen.route: (context) {
-                    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-                    return RecipeDetailScreen(recipeId: args['id'] as String);
+                final args = ModalRoute.of(context)!.settings.arguments
+                    as Map<String, dynamic>;
+                return RecipeDetailScreen(recipeId: args['id'] as String);
               },
             },
           );

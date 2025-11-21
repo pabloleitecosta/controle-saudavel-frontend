@@ -35,9 +35,9 @@ class _AddFoodModalState extends State<AddFoodModal> {
     if (image == null) return;
 
     setState(() {
-        _selectedImage = image;
-        _estimate = null;
-        _loading = true;
+      _selectedImage = image;
+      _estimate = null;
+      _loading = true;
     });
 
     try {
@@ -71,7 +71,7 @@ class _AddFoodModalState extends State<AddFoodModal> {
         estimate: _estimate!,
       );
       if (!mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context, true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Refeicao adicionada com sucesso!')),
       );
@@ -230,10 +230,9 @@ class _AddFoodModalState extends State<AddFoodModal> {
             );
           }),
           _menuIcon(Icons.edit, 'Alimento\nmanual', () {
-            Navigator.pop(context);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context, rootNavigator: true)
-                  .pushNamed(AddMealManualScreen.route);
+            Navigator.pop(context, {
+              'manual': true,
+              'mealType': widget.mealType,
             });
           }),
           _menuIcon(Icons.qr_code_scanner, 'Codigo', () {}),
@@ -329,7 +328,8 @@ class _AddFoodModalState extends State<AddFoodModal> {
                     activeColor: _softBlue,
                     onChanged: (value) {
                       setState(() {
-                        item.multiplier = double.parse(value.toStringAsFixed(1));
+                        item.multiplier =
+                            double.parse(value.toStringAsFixed(1));
                         _estimate!.recalculateTotals();
                       });
                     },

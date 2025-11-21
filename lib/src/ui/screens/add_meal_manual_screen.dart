@@ -14,7 +14,8 @@ import 'recipe_create_screen.dart';
 
 class AddMealManualScreen extends StatefulWidget {
   static const route = '/meal/add/manual';
-  const AddMealManualScreen({super.key});
+  final String mealType;
+  const AddMealManualScreen({super.key, required this.mealType});
 
   @override
   State<AddMealManualScreen> createState() => _AddMealManualScreenState();
@@ -136,9 +137,11 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(label,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                Text('Porção: ${(quantity * baseServing).toStringAsFixed(0)} $baseUnit'),
+                Text(
+                    'Porção: ${(quantity * baseServing).toStringAsFixed(0)} $baseUnit'),
                 Slider(
                   min: 0.5,
                   max: 3,
@@ -190,8 +193,7 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
       protein: (food['protein'] ?? 0).toDouble(),
       carbs: (food['carbs'] ?? 0).toDouble(),
       fat: (food['fat'] ?? 0).toDouble(),
-      baseServing:
-          (food['portionValue'] ?? food['serving'] ?? 100).toDouble(),
+      baseServing: (food['portionValue'] ?? food['serving'] ?? 100).toDouble(),
       baseUnit: food['portionUnit']?.toString() ??
           food['servingUnit']?.toString() ??
           'g',
@@ -223,6 +225,7 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
         totalProtein: totalProtein,
         totalCarbs: totalCarbs,
         totalFat: totalFat,
+        mealType: widget.mealType,
         source: 'manual',
       );
       if (!hadMeals && mounted) {
@@ -244,6 +247,16 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(t.t('add_meal_manual')),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(24),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Tipo de refeição: ${widget.mealType}',
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -306,9 +319,9 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
       child: Column(
         children: [
           TextField(
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Pesquisar Receitas',
-              suffixIcon: const Icon(Icons.search),
+              suffixIcon: Icon(Icons.search),
             ),
             onChanged: (value) => setState(() => _recipeQuery = value),
           ),
@@ -386,7 +399,7 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
           leading: const Icon(Icons.history),
           title: Text(meal.date),
           subtitle: Text(
-              '${meal.totalCalories.toStringAsFixed(0)} kcal • ${meal.items.length} itens'),
+              '${meal.totalCalories.toStringAsFixed(0)} kcal · ${meal.items.length} itens'),
         );
       },
       separatorBuilder: (_, __) => const Divider(),

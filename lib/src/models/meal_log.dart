@@ -33,6 +33,7 @@ class MealLog {
   final double totalCarbs;
   final double totalFat;
   final String source;
+  final String mealType;
 
   MealLog({
     required this.id,
@@ -43,6 +44,7 @@ class MealLog {
     required this.totalCarbs,
     required this.totalFat,
     required this.source,
+    required this.mealType,
   });
 
   factory MealLog.fromJson(Map<String, dynamic> json) {
@@ -59,6 +61,7 @@ class MealLog {
       totalCarbs: (json['totalCarbs'] ?? 0).toDouble(),
       totalFat: (json['totalFat'] ?? 0).toDouble(),
       source: json['source']?.toString() ?? 'manual',
+      mealType: json['mealType']?.toString() ?? 'Café da manhã',
     );
   }
 }
