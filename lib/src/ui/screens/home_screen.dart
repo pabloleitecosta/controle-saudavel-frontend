@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/user_service.dart';
 import '../widgets/add_food_modal.dart';
 import 'add_meal_manual_screen.dart';
+import 'meal_detail_screen.dart';
 import 'profile_goals_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -502,12 +503,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () => _openAddFoodModal(context, title),
                 icon: const Icon(Icons.add_circle_outline),
               ),
-              if (meals.isNotEmpty)
-                IconButton(
-                  tooltip: 'Excluir refeições deste tipo',
-                  onPressed: () => _confirmDeleteMeals(meals),
-                  icon: const Icon(Icons.delete_outline),
-                ),
             ],
           ),
           const SizedBox(height: 6),
@@ -522,65 +517,38 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (allItems.isNotEmpty) const Divider(height: 16),
           if (allItems.isNotEmpty)
-            ...allItems.map(
-              (item) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(item.label),
-                subtitle: Text(
-                  "P ${item.protein.toStringAsFixed(1)}g | C ${item.carbs.toStringAsFixed(1)}g | G ${item.fat.toStringAsFixed(1)}g",
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-                trailing: Text(
-                  "${item.calories.toStringAsFixed(0)} kcal",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
+            ...meals.map((meal) {
+              return Column(
+                children: meal.items.map(
+                  (item) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(item.label),
+                    subtitle: Text(
+                      "P ${item.protein.toStringAsFixed(1)}g | C ${item.carbs.toStringAsFixed(1)}g | G ${item.fat.toStringAsFixed(1)}g",
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                    trailing: Text(
+                      "${item.calories.toStringAsFixed(0)} kcal",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    onTap: () async {
+                      final deleted = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MealDetailScreen(meal: meal, item: item),
+                        ),
+                      );
+                      if (deleted == true && mounted) {
+                        await _loadMealsForWeek();
+                      }
+                    },
+                  ),
+                ).toList(),
+              );
+            }),
         ],
       ),
     );
-  }
-
-  Future<void> _confirmDeleteMeals(List<MealLog> meals) async {
-    final auth = context.read<AuthProvider>();
-    final user = auth.user;
-    if (user == null || meals.isEmpty) return;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Excluir refeições'),
-        content: const Text(
-            'Deseja excluir todas as refeições deste tipo para o dia selecionado?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    for (final meal in meals) {
-      try {
-        await _userService.deleteMeal(user.id, meal.id);
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao excluir refeição: $e')),
-        );
-        return;
-      }
-    }
-    if (mounted) {
-      await _loadMealsForWeek();
-    }
   }
 
   void _openAddFoodModal(BuildContext context, String mealType) async {
