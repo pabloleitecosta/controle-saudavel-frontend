@@ -11,6 +11,25 @@ class WeightEntry {
     required this.weight,
   });
 
+  factory WeightEntry.fromJson(Map<String, dynamic> data) {
+    final dateStr = data['date']?.toString();
+    DateTime? parsedDate;
+    if (dateStr != null) {
+      try {
+        parsedDate = DateTime.parse(dateStr);
+      } catch (_) {
+        parsedDate = null;
+      }
+    }
+    parsedDate ??= DateTime.now();
+
+    return WeightEntry(
+      id: data['id']?.toString() ?? '',
+      date: parsedDate,
+      weight: (data['weight'] ?? 0).toDouble(),
+    );
+  }
+
   factory WeightEntry.fromSnapshot(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {

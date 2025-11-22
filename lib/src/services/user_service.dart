@@ -57,8 +57,9 @@ class UserService {
 
   // Buscar perfil
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    final doc = await _usersCollection.doc(userId).get();
-    return doc.data();
+    final res = await _api.get('/user/$userId/profile');
+    if (res is Map<String, dynamic>) return res;
+    return null;
   }
 
     Future<void> saveMeal({
@@ -294,12 +295,10 @@ class UserService {
     required double weight,
     DateTime? date,
   }) async {
-    await _ensureUserDoc(userId);
     final entryDate = date ?? DateTime.now();
-    await _weightsCollection(userId).add({
+    await _api.post('/user/$userId/weights', {
       'weight': weight,
       'date': _dateFormatter.format(entryDate),
-      'recordedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -307,14 +306,16 @@ class UserService {
     String userId, {
     int limit = 30,
   }) async {
-    await _ensureUserDoc(userId);
-    Query<Map<String, dynamic>> query =
-        _weightsCollection(userId).orderBy('recordedAt', descending: true);
-    if (limit > 0) {
-      query = query.limit(limit);
+    final response = await _api.get(
+      '/user/$userId/weights',
+      query: {'limit': limit.toString()},
+    );
+    if (response is List) {
+      return response
+          .map((item) => WeightEntry.fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList();
     }
-    final snapshot = await query.get();
-    return snapshot.docs.map(WeightEntry.fromSnapshot).toList();
+    return const [];
   }
 
   String _canonicalMealType(String? raw) {
