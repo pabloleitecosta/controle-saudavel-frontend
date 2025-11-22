@@ -1,4 +1,4 @@
-class MealLogItem {
+﻿class MealLogItem {
   final String label;
   final double calories;
   final double protein;
@@ -61,7 +61,44 @@ class MealLog {
       totalCarbs: (json['totalCarbs'] ?? 0).toDouble(),
       totalFat: (json['totalFat'] ?? 0).toDouble(),
       source: json['source']?.toString() ?? 'manual',
-      mealType: json['mealType']?.toString() ?? 'Café da manhã',
+      mealType: _canonicalMealType(json['mealType']?.toString()),
     );
+  }
+
+  static String _canonicalMealType(String? raw) {
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) return 'Personalizar Refeicoes';
+    final norm = _normalize(value);
+    if (norm.contains('manha')) return 'Cafe da manha';
+    if (norm.contains('almo')) return 'Almoco';
+    if (norm.contains('jantar')) return 'Jantar';
+    if (norm.contains('lanche') || norm.contains('snack')) {
+      return 'Lanches/Outros';
+    }
+    if (norm.contains('agua')) return 'Contador de agua';
+    return 'Personalizar Refeicoes';
+  }
+
+  static String _normalize(String value) {
+    final lower = value.toLowerCase();
+    return lower
+        .replaceAll('\u00e1', 'a')
+        .replaceAll('\u00e0', 'a')
+        .replaceAll('\u00e2', 'a')
+        .replaceAll('\u00e3', 'a')
+        .replaceAll('\u00e9', 'e')
+        .replaceAll('\u00e8', 'e')
+        .replaceAll('\u00ea', 'e')
+        .replaceAll('\u00ed', 'i')
+        .replaceAll('\u00ec', 'i')
+        .replaceAll('\u00ee', 'i')
+        .replaceAll('\u00f3', 'o')
+        .replaceAll('\u00f2', 'o')
+        .replaceAll('\u00f4', 'o')
+        .replaceAll('\u00f5', 'o')
+        .replaceAll('\u00fa', 'u')
+        .replaceAll('\u00f9', 'u')
+        .replaceAll('\u00fb', 'u')
+        .replaceAll('\u00e7', 'c');
   }
 }

@@ -13,7 +13,8 @@ import '../screens/add_meal_manual_screen.dart';
 
 class AddFoodModal extends StatefulWidget {
   final String mealType;
-  const AddFoodModal({super.key, required this.mealType});
+  final DateTime targetDate;
+  const AddFoodModal({super.key, required this.mealType, required this.targetDate});
 
   @override
   State<AddFoodModal> createState() => _AddFoodModalState();
@@ -66,7 +67,7 @@ class _AddFoodModalState extends State<AddFoodModal> {
     try {
       await _userService.saveMealFromEstimate(
         userId: user.id,
-        date: DateTime.now(),
+        date: widget.targetDate,
         mealType: widget.mealType,
         estimate: _estimate!,
       );
@@ -179,7 +180,8 @@ class _AddFoodModalState extends State<AddFoodModal> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _saveMeal,
+                    onPressed:
+                        _loading || _estimate == null ? null : _saveMeal,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _softBlue,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -233,6 +235,7 @@ class _AddFoodModalState extends State<AddFoodModal> {
             Navigator.pop(context, {
               'manual': true,
               'mealType': widget.mealType,
+              'targetDate': widget.targetDate.toIso8601String(),
             });
           }),
           _menuIcon(Icons.qr_code_scanner, 'Codigo', () {}),

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
@@ -61,7 +61,7 @@ class UserService {
     return doc.data();
   }
 
-  Future<void> saveMeal({
+    Future<void> saveMeal({
     required String userId,
     required DateTime date,
     required List<Map<String, dynamic>> items,
@@ -72,6 +72,7 @@ class UserService {
     String? mealType,
     String source = 'manual',
   }) async {
+    final normalizedMealType = _canonicalMealType(mealType);
     await _api.post('/user/$userId/meals', {
       'date': _dateFormatter.format(date),
       'items': items,
@@ -79,7 +80,7 @@ class UserService {
       'totalProtein': totalProtein,
       'totalCarbs': totalCarbs,
       'totalFat': totalFat,
-      'mealType': mealType ?? 'Café da manhã',
+      'mealType': normalizedMealType,
       'source': source,
     });
   }
@@ -96,6 +97,10 @@ class UserService {
           .toList();
     }
     return const [];
+  }
+
+  Future<void> deleteMeal(String userId, String mealId) async {
+    await _api.delete('/user/$userId/meals/$mealId');
   }
 
   Future<UserInsights> fetchInsights(String userId) async {
@@ -311,4 +316,41 @@ class UserService {
     final snapshot = await query.get();
     return snapshot.docs.map(WeightEntry.fromSnapshot).toList();
   }
+
+  String _canonicalMealType(String? raw) {
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) return 'Personalizar Refeicoes';
+    final norm = _normalize(value);
+    if (norm.contains('manha')) return 'Cafe da manha';
+    if (norm.contains('almo')) return 'Almoco';
+    if (norm.contains('jantar')) return 'Jantar';
+    if (norm.contains('lanche') || norm.contains('snack')) return 'Lanches/Outros';
+    if (norm.contains('agua')) return 'Contador de agua';
+    return 'Personalizar Refeicoes';
+  }
+
+  String _normalize(String value) {
+    final lower = value.toLowerCase();
+    return lower
+        .replaceAll('\u00e1', 'a')
+        .replaceAll('\u00e0', 'a')
+        .replaceAll('\u00e2', 'a')
+        .replaceAll('\u00e3', 'a')
+        .replaceAll('\u00e9', 'e')
+        .replaceAll('\u00e8', 'e')
+        .replaceAll('\u00ea', 'e')
+        .replaceAll('\u00ed', 'i')
+        .replaceAll('\u00ec', 'i')
+        .replaceAll('\u00ee', 'i')
+        .replaceAll('\u00f3', 'o')
+        .replaceAll('\u00f2', 'o')
+        .replaceAll('\u00f4', 'o')
+        .replaceAll('\u00f5', 'o')
+        .replaceAll('\u00fa', 'u')
+        .replaceAll('\u00f9', 'u')
+        .replaceAll('\u00fb', 'u')
+        .replaceAll('\u00e7', 'c');
+  }
+
 }
+

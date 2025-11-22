@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -29,6 +29,45 @@ class _HomeScreenState extends State<HomeScreen> {
   late List<DateTime> _weekDays;
   int selectedDay = DateTime.now().weekday - 1; // 0 = segunda
 
+
+  // Normaliza e agrupa mealType para os cards corretos (acentos tratados)
+  String _canonicalType(String raw) {
+    final norm = _normalize(raw);
+    if (norm.contains('manha')) return 'Cafe da manha';
+    if (norm.contains('almo')) return 'Almoco';
+    if (norm.contains('jantar')) return 'Jantar';
+    if (norm.contains('lanche') || norm.contains('snack')) {
+      return 'Lanches/Outros';
+    }
+    if (norm.contains('agua')) return 'Contador de agua';
+    return 'Personalizar Refeicoes';
+  }
+
+    String _normalize(String value) {
+    final lower = value.toLowerCase();
+    return lower
+        .replaceAll('\u00e1', 'a')
+        .replaceAll('\u00e0', 'a')
+        .replaceAll('\u00e2', 'a')
+        .replaceAll('\u00e3', 'a')
+        .replaceAll('\u00e9', 'e')
+        .replaceAll('\u00e8', 'e')
+        .replaceAll('\u00ea', 'e')
+        .replaceAll('\u00ed', 'i')
+        .replaceAll('\u00ec', 'i')
+        .replaceAll('\u00ee', 'i')
+        .replaceAll('\u00f3', 'o')
+        .replaceAll('\u00f2', 'o')
+        .replaceAll('\u00f4', 'o')
+        .replaceAll('\u00f5', 'o')
+        .replaceAll('\u00fa', 'u')
+        .replaceAll('\u00f9', 'u')
+        .replaceAll('\u00fb', 'u')
+        .replaceAll('\u00e7', 'c');
+  }
+
+
+
   @override
   void initState() {
     super.initState();
@@ -57,8 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loadingMeals = true);
     try {
       final meals = await _userService.fetchMeals(user.id);
-      final start = _weekDays.first;
-      final end = _weekDays.last;
       final Map<String, List<MealLog>> grouped = {};
 
       for (final meal in meals) {
@@ -69,9 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
           parsed = null;
         }
         if (parsed == null) continue;
-        final day = DateTime(parsed.year, parsed.month, parsed.day);
-        if (day.isBefore(start) || day.isAfter(end)) continue;
-        final key = _dateFormatter.format(day);
+        final key = parsed.weekday.toString(); // 1 (segunda) a 7 (domingo)
         grouped.putIfAbsent(key, () => []).add(meal);
       }
 
@@ -79,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao carregar refeições: $e')),
+          SnackBar(content: Text('Erro ao carregar refeicoes: $e')),
         );
       }
     } finally {
@@ -308,8 +343,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // MEALS SECTION
   Widget _buildMealsSection(BuildContext context) {
-    final selectedDate = _weekDays[selectedDay];
-    final dayLabel = DateFormat('EEEE, d MMM', 'pt_BR').format(selectedDate);
+    const dayNames = [
+      'Segunda-feira',
+      'Terça-feira',
+      'Quarta-feira',
+      'Quinta-feira',
+      'Sexta-feira',
+      'Sábado',
+      'Domingo',
+    ];
+    final dayLabel = dayNames[selectedDay];
 
     const mealTypes = [
       'Café da manhã',
@@ -374,14 +417,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Nenhuma refeição registrada ainda",
+                    "Nenhuma refeicao registrada ainda",
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Toque em uma refeição para adicionar alimentos.",
+                    "Toque em uma refeicao para adicionar alimentos.",
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ],
@@ -392,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: type,
               icon: icons[type] ?? Icons.restaurant_menu,
               meals: dayMeals
-                  .where((m) => _canonicalType(m.mealType) == type)
+                  .where((m) => _canonicalType(m.mealType) == _canonicalType(type))
                   .toList(),
             ),
           ),
@@ -402,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<MealLog> _mealsForSelectedDay() {
-    final key = _dateFormatter.format(_weekDays[selectedDay]);
+    final key = (selectedDay + 1).toString(); // weekday 1-7
     return _mealsByDay[key] ?? [];
   }
 
@@ -459,6 +502,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () => _openAddFoodModal(context, title),
                 icon: const Icon(Icons.add_circle_outline),
               ),
+              if (meals.isNotEmpty)
+                IconButton(
+                  tooltip: 'Excluir refeições deste tipo',
+                  onPressed: () => _confirmDeleteMeals(meals),
+                  icon: const Icon(Icons.delete_outline),
+                ),
             ],
           ),
           const SizedBox(height: 6),
@@ -478,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(item.label),
                 subtitle: Text(
-                  "P ${item.protein.toStringAsFixed(1)}g · C ${item.carbs.toStringAsFixed(1)}g · G ${item.fat.toStringAsFixed(1)}g",
+                  "P ${item.protein.toStringAsFixed(1)}g | C ${item.carbs.toStringAsFixed(1)}g | G ${item.fat.toStringAsFixed(1)}g",
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 trailing: Text(
@@ -492,13 +541,56 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _confirmDeleteMeals(List<MealLog> meals) async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.user;
+    if (user == null || meals.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir refeições'),
+        content: const Text(
+            'Deseja excluir todas as refeições deste tipo para o dia selecionado?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    for (final meal in meals) {
+      try {
+        await _userService.deleteMeal(user.id, meal.id);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao excluir refeição: $e')),
+        );
+        return;
+      }
+    }
+    if (mounted) {
+      await _loadMealsForWeek();
+    }
+  }
+
   void _openAddFoodModal(BuildContext context, String mealType) async {
+    final targetDate = _weekDays[selectedDay];
     final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return AddFoodModal(mealType: mealType);
+        return AddFoodModal(mealType: mealType, targetDate: targetDate);
       },
     );
 
@@ -506,9 +598,16 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadMealsForWeek();
     } else if (result is Map && result['manual'] == true) {
       final type = (result['mealType'] as String?) ?? mealType;
+      final dateStr = result['targetDate'] as String?;
+      final parsedDate = dateStr != null
+          ? DateTime.tryParse(dateStr) ?? targetDate
+          : targetDate;
       final created = await Navigator.of(context).pushNamed(
         AddMealManualScreen.route,
-        arguments: {'mealType': type},
+        arguments: {
+          'mealType': type,
+          'targetDate': parsedDate.toIso8601String()
+        },
       );
       if (created == true) {
         await _loadMealsForWeek();
@@ -522,17 +621,17 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          _optionCard("Minhas Metas de Saúde", "TMB, TDEE e metas nutricionais",
+          _optionCard("Minhas Metas de Saude", "TMB, TDEE e metas nutricionais",
               Icons.favorite_border, () {
             Navigator.pushNamed(context, ProfileGoalsScreen.route);
           }),
-          _optionCard("Comunidade", "Feed e gamificação", Icons.forum_outlined,
+          _optionCard("Comunidade", "Feed e gamificacao", Icons.forum_outlined,
               () {
             Navigator.pushNamed(context, '/community');
           }),
-          _optionCard("Contador de Água", "Hidratação diária",
+          _optionCard("Contador de Agua", "Hidratacao diaria",
               Icons.water_drop_outlined, () {}),
-          _optionCard("Exercício e Sono", "Registre sua rotina",
+          _optionCard("Exercicio e Sono", "Registre sua rotina",
               Icons.fitness_center, () {}),
         ],
       ),
@@ -586,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Resumo diário",
+            Text("Resumo diario",
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -617,22 +716,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _canonicalType(String raw) {
-    final lower = raw.toLowerCase();
-    if (lower.contains('manhã') || lower.contains('manha')) {
-      return 'Café da manhã';
-    }
-    if (lower.contains('almo')) return 'Almoço';
-    if (lower.contains('jantar')) return 'Jantar';
-    if (lower.contains('lanche') || lower.contains('snack')) {
-      return 'Lanches/Outros';
-    }
-    if (lower.contains('água') || lower.contains('agua')) {
-      return 'Contador de água';
-    }
-    if (lower.isEmpty || lower.contains('refei')) {
-      return 'Café da manhã';
-    }
-    return 'Personalizar Refeições';
-  }
 }

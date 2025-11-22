@@ -1,4 +1,4 @@
-import 'package:controle_saudavel/src/ui/screens/add_meal_manual_screen.dart';
+﻿import 'package:controle_saudavel/src/ui/screens/add_meal_manual_screen.dart';
 import 'package:controle_saudavel/src/ui/screens/profile_goals_screen.dart';
 import 'package:controle_saudavel/src/ui/screens/recipe_create_screen.dart';
 import 'package:controle_saudavel/src/ui/screens/recipe_list_screen.dart';
@@ -81,7 +81,15 @@ class ControleSaudavelApp extends StatelessWidget {
                 final mealType = args != null && args['mealType'] is String
                     ? args['mealType'] as String
                     : 'Café da manhã';
-                return AddMealManualScreen(mealType: mealType);
+                final targetDateStr =
+                    args != null ? args['targetDate'] as String? : null;
+                final targetDate = targetDateStr != null
+                    ? DateTime.tryParse(targetDateStr) ?? DateTime.now()
+                    : DateTime.now();
+                return AddMealManualScreen(
+                  mealType: mealType,
+                  targetDate: targetDate,
+                );
               },
               PhotoRecognitionScreen.route: (_) =>
                   const PhotoRecognitionScreen(),

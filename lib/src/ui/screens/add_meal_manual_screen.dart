@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/i18n.dart';
 import '../../models/food_item.dart';
@@ -15,7 +16,12 @@ import 'recipe_create_screen.dart';
 class AddMealManualScreen extends StatefulWidget {
   static const route = '/meal/add/manual';
   final String mealType;
-  const AddMealManualScreen({super.key, required this.mealType});
+  final DateTime targetDate;
+  const AddMealManualScreen({
+    super.key,
+    required this.mealType,
+    required this.targetDate,
+  });
 
   @override
   State<AddMealManualScreen> createState() => _AddMealManualScreenState();
@@ -219,7 +225,7 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
     try {
       await _userService.saveMeal(
         userId: user.id,
-        date: DateTime.now(),
+        date: widget.targetDate,
         items: _selectedItems,
         totalCalories: totalCalories,
         totalProtein: totalProtein,
@@ -252,7 +258,7 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              'Tipo de refeição: ${widget.mealType}',
+              'Tipo de refeição: ${widget.mealType} · ${DateFormat('EEEE, d MMM', 'pt_BR').format(widget.targetDate)}',
               style: const TextStyle(fontSize: 14, color: Colors.black54),
             ),
           ),
@@ -526,6 +532,7 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
   }
 
   Widget _buildSelectionBar() {
+    final hasSelection = _selectedItems.isNotEmpty;
     return SafeArea(
       top: false,
       child: Container(
@@ -539,29 +546,35 @@ class _AddMealManualScreenState extends State<AddMealManualScreen>
         child: Row(
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${_selectedItems.length} itens selecionados',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  TextButton(
-                    onPressed: _showSelectedItems,
-                    child: const Text('Ver detalhes'),
-                  ),
-                ],
-              ),
+              child: hasSelection
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_selectedItems.length} itens selecionados',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        TextButton(
+                          onPressed: _showSelectedItems,
+                          child: const Text('Ver detalhes'),
+                        ),
+                      ],
+                    )
+                  : TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
             ),
-            SizedBox(
-              width: 180,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: _saveMeal,
-                child: const Text('Salvar refeição'),
+            if (hasSelection)
+              SizedBox(
+                width: 180,
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: _saveMeal,
+                  child: const Text('Salvar refeição'),
+                ),
               ),
-            ),
           ],
         ),
       ),
